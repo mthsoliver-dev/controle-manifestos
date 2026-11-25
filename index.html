@@ -1,1 +1,762 @@
-Meu primeiro projeto no GitHub
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Controle de Manifestos</title>
+
+<style>
+body{
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#f4f7f5;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+    color:#007A33;
+    margin-bottom:25px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    border-left:6px solid #007A33;
+    margin-bottom:20px;
+}
+
+select,
+input{
+    padding:10px;
+    margin:5px;
+}
+
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:5px;
+    background:#007A33;
+    color:white;
+    cursor:pointer;
+    margin:2px;
+}
+
+button:hover{
+    background:#005B26;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:#007A33;
+    color:white;
+}
+th,
+td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+.pendente{
+    color:#D32F2F;
+    font-weight:bold;
+}
+
+.concluido{
+    color:#2E7D32;
+    font-weight:bold;
+}
+
+.resumo{
+    margin-top:20px;
+    font-size:18px;
+}
+
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.9);
+    z-index:9999;
+}
+
+.modal img{
+    max-width:95%;
+    max-height:90%;
+    display:block;
+    margin:30px auto;
+}
+
+.fechar{
+    color:white;
+    position:absolute;
+    top:15px;
+    right:30px;
+    font-size:35px;
+    cursor:pointer;
+}
+
+.abas{
+    margin-bottom:20px;
+}
+
+.filtro-card{
+    display:none;
+}
+
+.logo-container{
+text-align:center;
+margin-bottom:15px;
+}
+
+.logo-container img{
+height:120px;
+max-width:300px;
+object-fit:contain;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="logo-container">
+<img
+src="logo-ambipar.png"
+alt="Logo Ambipar">
+</div>
+
+<h1>CONTROLE DE MANIFESTOS</h1>
+<p id="dataAtual"
+style="
+text-align:center;
+font-size:18px;
+font-weight:bold;
+color:#007A33;
+">
+</p>
+<div class="card">
+
+<h3>
+CONTROLE OPERACIONAL DE MANIFESTOS
+</h3>
+
+<p>
+Monitoramento diário de emissão de NF e MTR.
+</p>
+
+</div>
+
+<div class="abas">
+
+<button onclick="mostrarOperacao()">
+Operação
+</button>
+
+<button onclick="mostrarHistorico()">
+Histórico
+</button>
+
+</div>
+
+<div class="card">
+
+<select id="local">
+<option>EGM</option>
+<option>WCE</option>
+<option>TTE</option>
+<option>OZS</option>
+<option>EDE</option>
+</select>
+
+<input
+type="file"
+id="imagem"
+accept="image/*">
+
+<button onclick="adicionarImagem()">
+Adicionar
+</button>
+
+</div>
+
+<div
+id="filtrosHistorico"
+class="card filtro-card">
+
+<h3>Filtros</h3>
+
+<input
+type="date"
+id="dataInicial">
+
+<input
+type="date"
+id="dataFinal">
+
+<select id="filtroLocal">
+
+<option value="">
+Todas Unidades
+</option>
+
+<option value="EGM">
+EGM
+</option>
+
+<option value="WCE">
+WCE
+</option>
+
+<option value="TTE">
+TTE
+</option>
+
+<option value="OZS">
+OZS
+</option>
+
+<option value="EDE">
+EDE
+</option>
+
+</select>
+
+<button onclick="pesquisarHistorico()">
+Filtrar
+</button>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Data</th>
+<th>Unidade</th>
+<th>Arquivo</th>
+<th>Status</th>
+<th>Ações</th>
+</tr>
+
+</thead>
+
+<tbody id="tabela">
+
+</tbody>
+
+</table>
+
+<div class="resumo card">
+<p>
+<b>Pendentes:</b>
+<span id="pendentes">0</span>
+</p>
+
+<p>
+<b>Concluídos Hoje:</b>
+<span id="concluidosHoje">0</span>
+</p>
+
+<p>
+<b>Arquivados:</b>
+<span id="arquivados">0</span>
+</p>
+
+</div>
+
+<div
+id="modal"
+class="modal">
+
+<span
+class="fechar"
+onclick="fecharImagem()">
+✖
+</span>
+
+<img id="imagemGrande">
+
+</div>
+
+<script>
+let registros =
+JSON.parse(
+localStorage.getItem("manifestos")
+) || [];
+
+let modoAtual = "operacao";
+
+function salvarDados(){
+
+localStorage.setItem(
+"manifestos",
+JSON.stringify(registros)
+);
+
+}
+
+function abrirImagem(src){
+
+document.getElementById(
+"imagemGrande"
+).src = src;
+
+document.getElementById(
+"modal"
+).style.display = "block";
+
+}
+
+function fecharImagem(){
+
+document.getElementById(
+"modal"
+).style.display = "none";
+
+}
+
+function registroConcluido(reg){
+
+return reg.mtr &&
+(reg.nf || reg.nfa);
+
+}
+function adicionarImagem(){
+
+let local =
+document.getElementById(
+"local"
+).value;
+
+let arquivo =
+document.getElementById(
+"imagem"
+).files[0];
+
+if(!arquivo){
+
+alert(
+"Selecione uma imagem."
+);
+
+return;
+
+}
+
+let reader =
+new FileReader();
+
+reader.onload = function(e){
+
+let agora =
+new Date();
+
+registros.push({
+
+id: Date.now(),
+
+data:
+agora.toLocaleDateString(
+"pt-BR"
+),
+
+dataISO:
+agora
+.toISOString()
+.split("T")[0],
+
+local: local,
+
+nome:
+arquivo.name,
+
+imagem:
+e.target.result,
+
+nf:false,
+mtr:false,
+nfa:false
+
+});
+
+salvarDados();
+
+atualizarTela();
+
+};
+
+reader.readAsDataURL(
+arquivo
+);
+
+document.getElementById(
+"imagem"
+).value = "";
+
+}
+function marcarNF(id){
+
+let r =
+registros.find(
+reg => reg.id === id
+);
+
+r.nf = !r.nf;
+
+if(r.nf){
+r.nfa = false;
+}
+
+salvarDados();
+
+atualizarTela();
+
+}
+
+function marcarMTR(id){
+
+let r =
+registros.find(
+reg => reg.id === id
+);
+
+r.mtr = !r.mtr;
+
+salvarDados();
+
+atualizarTela();
+
+}
+
+function marcarNFA(id){
+
+let r =
+registros.find(
+reg => reg.id === id
+);
+
+r.nfa = !r.nfa;
+
+if(r.nfa){
+r.nf = false;
+}
+
+salvarDados();
+
+atualizarTela();
+
+}
+
+function removerLinha(id){
+
+registros =
+registros.filter(
+r => r.id !== id
+);
+
+salvarDados();
+
+atualizarTela();
+
+}
+function renderizar(lista){
+
+let tabela =
+document.getElementById(
+"tabela"
+);
+
+tabela.innerHTML = "";
+
+lista.forEach(reg => {
+
+let concluido =
+registroConcluido(reg);
+
+let linha =
+document.createElement("tr");
+
+linha.innerHTML = `
+
+<td>${reg.data || '-'}</td>
+
+<td>${reg.local}</td>
+
+<td>${reg.nome}</td>
+
+<td class="${
+concluido
+? 'concluido'
+: 'pendente'
+}">
+${
+concluido
+? 'CONCLUÍDO'
+: 'PENDENTE'
+}
+</td>
+
+<td>
+
+<button onclick="abrirImagem('${reg.imagem}')">
+Visualizar
+</button>
+
+<button
+onclick="marcarNF(${reg.id})"
+style="
+background:
+${reg.nf ? 'green' : '#0078d7'};
+">
+${reg.nf ? 'NF ✓' : 'NF OK'}
+</button>
+
+<button
+onclick="marcarMTR(${reg.id})"
+style="
+background:
+${reg.mtr ? 'green' : '#0078d7'};
+">
+${reg.mtr ? 'MTR ✓' : 'MTR OK'}
+</button>
+
+<button
+onclick="marcarNFA(${reg.id})"
+style="
+background:
+${reg.nfa ? '#ff9800' : '#0078d7'};
+">
+${reg.nfa ? 'NF N/A ✓' : 'NF N/A'}
+</button>
+
+<button
+onclick="removerLinha(${reg.id})"
+style="background:#d32f2f;">
+Excluir
+</button>
+
+</td>
+`;
+
+tabela.appendChild(linha);
+
+});
+
+atualizarIndicadores();
+
+}
+function atualizarIndicadores(){
+
+const hoje =
+new Date()
+.toISOString()
+.split("T")[0];
+
+let pendentes = 0;
+let concluidosHoje = 0;
+let arquivados = 0;
+
+registros.forEach(reg=>{
+
+let concluido =
+registroConcluido(reg);
+
+if(!concluido){
+
+pendentes++;
+
+}
+else if(
+reg.dataISO === hoje
+){
+
+concluidosHoje++;
+
+}
+else{
+
+arquivados++;
+
+}
+
+});
+
+document.getElementById(
+"pendentes"
+).innerText =
+pendentes;
+
+document.getElementById(
+"concluidosHoje"
+).innerText =
+concluidosHoje;
+
+document.getElementById(
+"arquivados"
+).innerText =
+arquivados;
+
+}
+function renderizarOperacao(){
+
+const hoje =
+new Date()
+.toISOString()
+.split("T")[0];
+
+let lista =
+registros.filter(reg=>{
+
+let concluido =
+registroConcluido(reg);
+
+if(!concluido){
+
+return true;
+
+}
+
+return reg.dataISO === hoje;
+
+});
+
+renderizar(lista);
+
+}
+
+function mostrarOperacao(){
+
+modoAtual =
+"operacao";
+
+document.getElementById(
+"filtrosHistorico"
+).style.display =
+"none";
+
+renderizarOperacao();
+
+}
+
+function mostrarHistorico(){
+
+modoAtual =
+"historico";
+
+document.getElementById(
+"filtrosHistorico"
+).style.display =
+"block";
+
+renderizar(registros);
+
+}
+function pesquisarHistorico(){
+
+let inicio =
+document.getElementById(
+"dataInicial"
+).value;
+
+let fim =
+document.getElementById(
+"dataFinal"
+).value;
+
+let unidade =
+document.getElementById(
+"filtroLocal"
+).value;
+
+let filtrados =
+registros.filter(reg=>{
+
+let ok = true;
+
+if(unidade){
+
+ok =
+ok &&
+reg.local === unidade;
+
+}
+
+if(inicio){
+
+ok =
+ok &&
+reg.dataISO >= inicio;
+
+}
+
+if(fim){
+
+ok =
+ok &&
+reg.dataISO <= fim;
+
+}
+
+return ok;
+
+});
+
+renderizar(filtrados);
+
+}
+
+function atualizarTela(){
+
+if(
+modoAtual ===
+"operacao"
+){
+
+renderizarOperacao();
+
+}else{
+
+pesquisarHistorico();
+
+}
+
+}
+
+document.getElementById(
+"dataAtual"
+).innerHTML =
+new Date().toLocaleDateString(
+"pt-BR"
+);
+
+renderizarOperacao();
+
+</script>
+
+<hr>
+
+<p style="
+text-align:center;
+color:#777;
+font-size:12px;
+">
+
+Ambipar Environment • Controle Operacional de Manifestos
+</p>
+
+</body>
+</html>
